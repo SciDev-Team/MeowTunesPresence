@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "MeowTunes Discord Presence",
+  "version": "1.0.0",
+  "description": "Shows the track you are playing on vasl.social/meowtunes in your Discord profile. Built by the SciDev team.",
+  "author": "SciDev",
+  "homepage_url": "https://scidev.ir",
+  "permissions": ["storage", "alarms"],
+  "host_permissions": ["https://vasl.social/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://vasl.social/*"],
+      "js": ["inject.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://vasl.social/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "MeowTunes Discord Presence",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

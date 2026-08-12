@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        width: 260px;
+        margin: 0;
+        padding: 14px;
+        font: 13px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: #17131f;
+        color: #eae6f2;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        color: #b7aecb;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #6b6480;
+        flex: none;
+      }
+      .dot.on {
+        background: #4ade80;
+      }
+      .dot.off {
+        background: #f87171;
+      }
+      .track {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #2c2438;
+      }
+      .title {
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .artist {
+        color: #b7aecb;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .muted {
+        color: #6b6480;
+      }
+      .credit {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid #2c2438;
+        font-size: 11px;
+        color: #6b6480;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .credit a {
+        color: #22d3ee;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .credit a:hover {
+        text-decoration: underline;
+      }
+      /* toggle */
+      label.switch {
+        position: relative;
+        display: inline-block;
+        width: 38px;
+        height: 21px;
+        flex: none;
+      }
+      label.switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        inset: 0;
+        background: #3a3150;
+        border-radius: 999px;
+        transition: background 0.15s;
+      }
+      .slider::before {
+        content: "";
+        position: absolute;
+        width: 15px;
+        height: 15px;
+        left: 3px;
+        top: 3px;
+        background: #eae6f2;
+        border-radius: 50%;
+        transition: transform 0.15s;
+      }
+      input:checked + .slider {
+        background: #7c5cff;
+      }
+      input:checked + .slider::before {
+        transform: translateX(17px);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>MeowTunes → Discord</h1>
+
+    <div class="row">
+      <span>Enabled</span>
+      <label class="switch">
+        <input type="checkbox" id="toggle" />
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="status">
+      <span class="dot" id="dot"></span>
+      <span id="statusText">Checking…</span>
+    </div>
+
+    <div class="track">
+      <div class="title" id="title">Nothing playing</div>
+      <div class="artist" id="artist"></div>
+    </div>
+
+    <div class="credit">
+      <span>Built by the SciDev team</span>
+      <a href="https://scidev.ir" target="_blank" rel="noopener noreferrer">SciDev.ir</a>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

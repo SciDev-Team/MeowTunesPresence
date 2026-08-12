@@ -1,0 +1,10 @@
+node_modules/
+dist/
+server/config.json
+*.log
+.DS_Store
+Thumbs.db
+
+# Internal, not for the public repo
+LAUNCH.md
+web/

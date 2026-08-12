@@ -1,0 +1,126 @@
+<div align="center">
+
+# MeowTunes Presence
+
+**آهنگی که توی [میوتونز](https://vasl.social/meowtunes) گوش می‌دی، روی پروفایل دیسکوردت**
+
+با کاور، اسم خواننده و نوار پیشرفت زنده — همون کارتی که اسپاتیفای داره.
+
+[نصب و دانلود](https://meowtunes.scidev.ir) · [حریم خصوصی](https://meowtunes.scidev.ir/privacy.html) · [SciDev](https://scidev.ir)
+
+</div>
+
+---
+
+```
+┌─────────────────────────────────┐
+│  Listening to MeowTunes         │
+│  ┌────┐                         │
+│  │ ♫  │  Shab Hamishe           │
+│  │    │  Kurosh                 │
+│  └────┘  ──────●────────        │
+│          01:20        03:31     │
+│  [ Open MeowTunes ] [ Get it ]  │
+└─────────────────────────────────┘
+```
+
+## چی لازم داری
+
+- ویندوز
+- دیسکورد **نسخه دسکتاپ** (نسخه مرورگری Rich Presence نداره)
+- کروم، اج، فایرفاکس یا هر مرورگر هم‌خانواده
+
+## نصب
+
+اگه فقط می‌خوای ازش استفاده کنی، برو به **[meowtunes.scidev.ir](https://meowtunes.scidev.ir)**. دو تا قدم داره و خودش مرورگرتو تشخیص می‌ده.
+
+خلاصه‌ش:
+
+1. `MeowTunesPresence.exe` رو دانلود و یه بار اجرا کن. خودش نصب می‌شه و از دفعه بعد با ویندوز بالا میاد.
+2. افزونه رو به مرورگرت اضافه کن.
+3. تب میوتونزو رفرش کن و یه آهنگ بذار.
+
+## چرا دو تیکه‌ست
+
+دیسکورد Rich Presence رو فقط از طریق یه سوکت محلی روی همون کامپیوتری قبول می‌کنه که خودش روش بازه (`\\.\pipe\discord-ipc-0` روی ویندوز). مرورگر به چنین چیزی دسترسی نداره، برای همین یه واسط کوچیک لازمه که رابط بین این دو باشه.
+
+```
+میوتونز ──► افزونه ──► ws://127.0.0.1:6472 ──► واسط ──► Discord IPC
+```
+
+هیچ‌کدوم از این مراحل از کامپیوتر خودت بیرون نمی‌ره. سروری در کار نیست.
+
+## نکته‌های فنی
+
+میوتونز پلیرش رو با `new Audio()` می‌سازه و هیچ‌وقت به DOM اضافه‌ش نمی‌کنه، پس `document.querySelector('audio')` چیزی پیدا نمی‌کنه. افزونه به‌جاش توی **MAIN world** و با `run_at: document_start` اجرا می‌شه و `HTMLMediaElement.prototype.play` رو می‌پیچه تا همون لحظه‌ای که اپ اولین بار پخش می‌کنه المنت رو بگیره. از اون به بعد `currentTime` و `duration` در دسترسه.
+
+اطلاعات خود آهنگ از `navigator.mediaSession.metadata` میاد که سایت کامل پرش می‌کنه، از جمله آدرس واقعی کاور. دیسکورد برای `largeImageKey` آدرس https خارجی قبول می‌کنه، پس کاور بدون آپلود چیزی نمایش داده می‌شه.
+
+دو چیزی که قابل استفاده نبودن: سایت `mediaSession.setPositionState()` رو صدا نمی‌زنه و `playbackState` همیشه `"none"` می‌مونه. برای همین موقعیت پخش فقط از المنت گرفته‌شده خونده می‌شه.
+
+نوار پیشرفت از تایم‌استمپ میاد: `startTimestamp = now - position` و `endTimestamp = start + duration`. موقع pause تایم‌استمپ‌ها حذف می‌شن وگرنه نوار روی آهنگ متوقف هم جلو می‌ره.
+
+افزونه فقط وقتی چیزی عوض بشه پیام می‌فرسته، به‌علاوه هر ۱۰ ثانیه یه ضربان. بدون ضربان، وسط پخش عادی هیچ پیامی نمی‌رفت و واسط فکر می‌کرد مرورگر بسته شده. سمت واسط هم آپدیت‌ها حداکثر هر ۳ ثانیه یکی فرستاده می‌شن و تکراری‌ها دور ریخته می‌شن، چون دیسکورد `SET_ACTIVITY` رو حدود ۵ درخواست در هر ۲۰ ثانیه محدود می‌کنه.
+
+## اجرا از سورس
+
+```bash
+cd server
+npm install
+node index.js
+```
+
+افزونه رو هم با `chrome://extensions` ← Developer mode ← **Load unpacked** ← پوشه `extension/` لود کن.
+
+روی مک و لینوکس هم همین مسیر کار می‌کنه؛ فقط بیلد آماده نداریم.
+
+### تنظیمات
+
+پیش‌فرض‌ها توی [`server/config.js`](server/config.js) هستن. برای بازنویسی‌شون یه `config.json` کنار همون فایل بساز:
+
+| کلید | کار |
+|---|---|
+| `clientId` | Application ID دیسکورد. اسم اپ همونیه که بعد از «Listening to» دیده می‌شه |
+| `port` | پورت لوکالی که افزونه بهش وصل می‌شه |
+| `buttons` | حداکثر دو دکمه زیر کارت. `label` تا ۳۲ کاراکتر، `url` باید http(s) باشه |
+| `defaultCoverKey` | تصویر جایگزین برای آهنگ‌های بدون کاور (باید توی Art Assets آپلود شده باشه) |
+| `idleClearMs` | اگه این مدت خبری نرسه پرزنس پاک می‌شه. زیر `20000` نبر، ضربان هر ۱۰ ثانیه‌ست |
+
+### بیلد
+
+```bash
+node build-extension.mjs      # dist/meowtunes-chrome.zip + dist/meowtunes-firefox.zip
+cd server && node build.mjs   # server/dist/MeowTunesPresence.exe
+```
+
+سورس افزونه یکیه و موقع بسته‌بندی مانیفست فایرفاکس وصله می‌شه: فایرفاکس توی MV3 به‌جای service worker از event page استفاده می‌کنه و برای امضا شناسه ثابت می‌خواد. `strict_min_version` روی `128` هست چون پشتیبانی از `world: "MAIN"` از همون نسخه اضافه شد.
+
+## ساختار
+
+```
+extension/          افزونه (کروم، اج، فایرفاکس)
+  inject.js         هوک روی play() و خوندن mediaSession   (MAIN world)
+  content.js        پل postMessage به chrome.runtime        (isolated)
+  background.js     کلاینت WebSocket با reconnect
+  popup.html/js     وضعیت اتصال و کلید روشن/خاموش
+server/             واسط لوکال
+  index.js          سرور WebSocket، Discord RPC، throttle
+  install.js        نصب و حذف خودکار روی ویندوز
+  build.mjs         بسته‌بندی به فایل اجرایی تکی
+build-extension.mjs بسته‌بندی افزونه برای استورها
+```
+
+## حریم خصوصی
+
+هیچ داده‌ای جمع‌آوری یا ارسال نمی‌شه. افزونه فقط روی `vasl.social` فعاله و فقط همون اطلاعاتی رو می‌خونه که سایت از طریق `mediaSession` بیرون می‌ده. جزئیات کامل: [meowtunes.scidev.ir/privacy.html](https://meowtunes.scidev.ir/privacy.html)
+
+## مجوز
+
+[MIT](LICENSE)
+
+---
+
+<div align="center">
+ساخت تیم <a href="https://scidev.ir">SciDev</a><br>
+<sub>پروژه‌ای مستقله و رسماً بخشی از میوتونز یا وصل نیست.</sub>
+</div>
