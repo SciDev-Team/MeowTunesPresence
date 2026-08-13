@@ -11,9 +11,12 @@ const DEFAULTS = {
   playingIconKey: "playing",
   pausedIconKey: "paused",
   idleClearMs: 30_000,
-  // Listen Along: advertises a joinable party on the activity card so friends
-  // get a Join button. Clicking it opens the same track in their MeowTunes.
-  listenAlong: true,
+  // Listen Along advertises a joinable party so a friend can jump into the same
+  // track. It is off because Discord will not render buttons and a join secret
+  // on the same card, and the Join button only appears to people already on the
+  // user's friends list, while the buttons below show up for everyone.
+  // Turning this on also enables Discord's game-invite flow.
+  listenAlong: false,
   partyMax: 5,
   // Up to 2, labels max 32 chars, URLs must be http(s). MeowTunes has no
   // per-track permalink (the app never leaves /meowtunes), so these point at
