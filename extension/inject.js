@@ -153,4 +153,69 @@
   }
 
   setInterval(() => tick(false), POLL_MS);
+
+  /* ---------------- Listen Along (receiving side) ---------------- */
+
+  const SEARCH_TIMEOUT_MS = 6000;
+
+  const normalize = (s) => (s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+
+  function waitFor(test, timeout) {
+    return new Promise((resolve) => {
+      const found = test();
+      if (found) return resolve(found);
+
+      const observer = new MutationObserver(() => {
+        const hit = test();
+        if (!hit) return;
+        observer.disconnect();
+        clearTimeout(timer);
+        resolve(hit);
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      const timer = setTimeout(() => {
+        observer.disconnect();
+        resolve(null);
+      }, timeout);
+    });
+  }
+
+  // The search field is a controlled React input, so assigning .value alone is
+  // discarded on the next render. Going through the native setter and firing an
+  // input event is what makes React pick the change up.
+  function typeSearch(input, text) {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+    setter.call(input, text);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  async function playTrack(track) {
+    const input = document.querySelector(".vmt-search-wrap input");
+    if (!input) return;
+
+    typeSearch(input, track.title);
+
+    // Result rows are virtualised and render empty, but each carries an
+    // aria-label of "پخش <title>", which is the only dependable handle here.
+    const wanted = normalize(track.title);
+    const row = await waitFor(() => {
+      const rows = [...document.querySelectorAll(".vmt-row[aria-label]")];
+      if (!rows.length) return null;
+      return (
+        rows.find((r) => normalize(r.getAttribute("aria-label")).includes(wanted)) ??
+        rows[0] // fall back to the top result rather than doing nothing
+      );
+    }, SEARCH_TIMEOUT_MS);
+
+    if (row) row.click();
+  }
+
+  window.addEventListener("message", (event) => {
+    if (event.source !== window) return;
+    const data = event.data;
+    if (!data || data.__meowTunesPresence !== true || data.type !== "play") return;
+    if (!data.payload?.title) return;
+    playTrack(data.payload);
+  });
 })();

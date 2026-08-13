@@ -48,6 +48,17 @@ function connect() {
     if (lastPayload) rawSend({ type: "update", payload: lastPayload });
   });
 
+  // Listen Along: the helper pushes a track here when a friend hits Join.
+  ws.addEventListener("message", (event) => {
+    let msg;
+    try {
+      msg = JSON.parse(event.data);
+    } catch {
+      return;
+    }
+    if (msg?.type === "play" && msg.payload?.title) playInTab(msg.payload);
+  });
+
   ws.addEventListener("close", () => {
     if (socket === ws) socket = null;
     scheduleReconnect();
@@ -88,9 +99,47 @@ function disconnect() {
   socket = null;
 }
 
+/* ---------------- Listen Along ---------------- */
+
+const MEOWTUNES_URL = "https://vasl.social/meowtunes";
+
+// Reuse an open MeowTunes tab when there is one, otherwise open it. A freshly
+// opened tab has no content script running yet, so the request is held until
+// that tab reports it is ready.
+let pendingPlay = null;
+
+async function playInTab(track) {
+  try {
+    const tabs = await api.tabs.query({ url: "https://vasl.social/*" });
+    const tab = tabs.find((t) => t.url?.includes("/meowtunes")) ?? tabs[0];
+
+    if (tab) {
+      await api.tabs.update(tab.id, { active: true });
+      if (tab.windowId != null) await api.windows.update(tab.windowId, { focused: true });
+      api.tabs.sendMessage(tab.id, { type: "play", payload: track }, () => void api.runtime.lastError);
+      return;
+    }
+
+    pendingPlay = track;
+    await api.tabs.create({ url: MEOWTUNES_URL, active: true });
+  } catch (err) {
+    console.log("[MeowTunes] could not honour join request:", err?.message ?? err);
+  }
+}
+
 /* ---------------- messages from the page ---------------- */
 
-api.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+api.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // A tab we opened for a join request has finished loading and can take it now.
+  if (message?.type === "ready") {
+    if (pendingPlay && sender.tab?.id != null) {
+      const track = pendingPlay;
+      pendingPlay = null;
+      api.tabs.sendMessage(sender.tab.id, { type: "play", payload: track }, () => void api.runtime.lastError);
+    }
+    return;
+  }
+
   if (message?.type === "status") {
     sendResponse({
       enabled,

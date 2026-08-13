@@ -11,6 +11,10 @@ const DEFAULTS = {
   playingIconKey: null,
   pausedIconKey: null,
   idleClearMs: 30_000,
+  // Listen Along: advertises a joinable party on the activity card so friends
+  // get a Join button. Clicking it opens the same track in their MeowTunes.
+  listenAlong: true,
+  partyMax: 5,
   // Up to 2, labels max 32 chars, URLs must be http(s). MeowTunes has no
   // per-track permalink (the app never leaves /meowtunes), so these point at
   // the app itself rather than the song. Set to [] to hide them.
