@@ -7,9 +7,9 @@ import { dirname, join } from "node:path";
 const DEFAULTS = {
   clientId: "1536131379409199104",
   port: 6472,
-  defaultCoverKey: null,
-  playingIconKey: null,
-  pausedIconKey: null,
+  defaultCoverKey: "default_cover",
+  playingIconKey: "playing",
+  pausedIconKey: "paused",
   idleClearMs: 30_000,
   // Listen Along: advertises a joinable party on the activity card so friends
   // get a Join button. Clicking it opens the same track in their MeowTunes.
