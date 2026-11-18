@@ -122,6 +122,17 @@
       input:checked + .slider::before {
         transform: translateX(17px);
       }
+      .help {
+        display: block;
+        margin-top: 6px;
+        padding-inline-start: 15px;
+        font-size: 12px;
+        color: #22d3ee;
+        text-decoration: none;
+      }
+      .help:hover {
+        text-decoration: underline;
+      }
     </style>
   </head>
   <body>
@@ -139,6 +150,9 @@
       <span class="dot" id="dot"></span>
       <span id="statusText">Checking…</span>
     </div>
+    <a class="help" id="help" href="https://meowtunes.scidev.ir" target="_blank" rel="noopener noreferrer" hidden>
+      Get the helper app →
+    </a>
 
     <div class="track">
       <div class="title" id="title">Nothing playing</div>

@@ -1,25 +1,10 @@
-/**
- * Produces dist/MeowTunesPresence.exe, a single file with no Node install
- * required on the user's machine.
- *
- *   1. esbuild bundles the ESM sources into one CommonJS file (Node SEA only
- *      accepts a CJS entry point).
- *   2. node --experimental-sea-config turns that into a SEA blob.
- *   3. postject injects the blob into a copy of the node binary.
- */
 import { build } from "esbuild";
 import { execFileSync } from "node:child_process";
 import { copyFileSync, mkdirSync, rmSync, writeFileSync, statSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/**
- * The shipped node.exe is Authenticode-signed, and postject refuses to rewrite
- * a PE that still carries a certificate table. signtool could remove it, but it
- * only ships with the Windows SDK, so do it directly instead: blank the
- * security entry in the data directory and cut the certificate off the end
- * (it always lives at the tail of the file).
- */
+// postject refuses a PE that still carries a certificate table, and signtool only ships with the Windows SDK.
 function stripSignature(path) {
   const buf = readFileSync(path);
 
@@ -62,8 +47,7 @@ await build({
   format: "cjs",
   outfile: bundlePath,
   legalComments: "none",
-  // ws pulls these in only for a native speedup; they are optional at runtime
-  // and requiring them would drag native modules into the bundle.
+  // optional native speedups for ws; bundling them would drag in native modules
   external: ["bufferutil", "utf-8-validate"],
 });
 console.log(`   bundle: ${(statSync(bundlePath).size / 1024).toFixed(0)} KB`);

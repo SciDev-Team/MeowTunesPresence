@@ -1,18 +1,8 @@
-/**
- * Holds the WebSocket to the local presence server.
- *
- * This lives in the service worker rather than the page because an extension
- * origin may talk to ws://127.0.0.1 freely. From the site's own https origin
- * it would run into mixed-content and Private Network Access restrictions.
- */
-
-// Firefox exposes the promise-based API as `browser`; its `chrome` alias is
-// callback-only, so `await chrome.storage...` would silently yield undefined
-// there. Chromium's MV3 `chrome` already returns promises, so this alias makes
-// the same code correct on both.
+// Firefox's promise-based API lives on `browser`; its `chrome` alias is callback-only.
 const api = globalThis.browser ?? globalThis.chrome;
 
 const SERVER_URL = "ws://127.0.0.1:6472";
+const MEOWTUNES_URL = "https://vasl.social/meowtunes";
 const RECONNECT_MIN_MS = 1_000;
 const RECONNECT_MAX_MS = 30_000;
 const KEEPALIVE_ALARM = "meowtunes-keepalive";
@@ -22,8 +12,7 @@ let reconnectDelay = RECONNECT_MIN_MS;
 let reconnectTimer = null;
 let lastPayload = null;
 let enabled = true;
-
-/* ---------------- connection handling ---------------- */
+let pendingPlay = null;
 
 function connect() {
   if (!enabled) return;
@@ -43,12 +32,9 @@ function connect() {
 
   ws.addEventListener("open", () => {
     reconnectDelay = RECONNECT_MIN_MS;
-    console.log("[MeowTunes] connected to presence server");
-    // Restore whatever was playing before the server restarted.
     if (lastPayload) rawSend({ type: "update", payload: lastPayload });
   });
 
-  // Listen Along: the helper pushes a track here when a friend hits Join.
   ws.addEventListener("message", (event) => {
     let msg;
     try {
@@ -64,8 +50,6 @@ function connect() {
     scheduleReconnect();
   });
 
-  // A failed connection also fires close; keep this quiet so the console does
-  // not fill up while the server simply is not running yet.
   ws.addEventListener("error", () => {});
 }
 
@@ -99,15 +83,6 @@ function disconnect() {
   socket = null;
 }
 
-/* ---------------- Listen Along ---------------- */
-
-const MEOWTUNES_URL = "https://vasl.social/meowtunes";
-
-// Reuse an open MeowTunes tab when there is one, otherwise open it. A freshly
-// opened tab has no content script running yet, so the request is held until
-// that tab reports it is ready.
-let pendingPlay = null;
-
 async function playInTab(track) {
   try {
     const tabs = await api.tabs.query({ url: "https://vasl.social/*" });
@@ -120,6 +95,7 @@ async function playInTab(track) {
       return;
     }
 
+    // A fresh tab has no content script yet; it claims the track once it reports "ready".
     pendingPlay = track;
     await api.tabs.create({ url: MEOWTUNES_URL, active: true });
   } catch (err) {
@@ -127,10 +103,7 @@ async function playInTab(track) {
   }
 }
 
-/* ---------------- messages from the page ---------------- */
-
 api.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // A tab we opened for a join request has finished loading and can take it now.
   if (message?.type === "ready") {
     if (pendingPlay && sender.tab?.id != null) {
       const track = pendingPlay;
@@ -176,11 +149,7 @@ api.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-/* ---------------- lifecycle ---------------- */
-
-// WebSocket traffic already pushes back the service worker idle timer, but a
-// silent track (nobody listening, nothing playing) would eventually let it die.
-api.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: 0.4 });
+api.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: 0.5 }); // Chrome's minimum
 api.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === KEEPALIVE_ALARM) connect();
 });

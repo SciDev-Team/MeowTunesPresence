@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MeowTunes Discord Presence",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Shows the track you are playing on vasl.social/meowtunes in your Discord profile. Built by the SciDev team.",
   "author": "SciDev",
   "homepage_url": "https://scidev.ir",

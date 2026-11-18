@@ -3,8 +3,10 @@ const dot = document.getElementById("dot");
 const statusText = document.getElementById("statusText");
 const title = document.getElementById("title");
 const artist = document.getElementById("artist");
+const help = document.getElementById("help");
 
 function render(status) {
+  help.hidden = !(status?.enabled && !status.connected);
   if (!status) {
     dot.className = "dot";
     statusText.textContent = "Extension not responding";
@@ -21,7 +23,7 @@ function render(status) {
     statusText.textContent = "Connected to presence server";
   } else {
     dot.className = "dot off";
-    statusText.textContent = "Server not running";
+    statusText.textContent = "Helper app not running";
   }
 
   if (status.track?.title) {
