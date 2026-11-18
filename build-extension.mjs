@@ -1,4 +1,4 @@
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync, statSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,16 +12,16 @@ const FIREFOX_MIN = "140.0"; // first release that understands data_collection_p
 
 const step = (msg) => console.log(`\n\x1b[36m▶ ${msg}\x1b[0m`);
 
+// Windows PowerShell's Compress-Archive stores "icons\icon16.png", which AMO rejects; bsdtar writes "/".
 function zip(folder, outFile) {
   rmSync(outFile, { force: true });
-  try {
-    execFileSync("zip", ["-r", "-q", outFile, "."], { cwd: folder });
-  } catch {
-    execFileSync(
-      "powershell",
-      ["-NoProfile", "-Command", `Compress-Archive -Path '${folder}\\*' -DestinationPath '${outFile}' -Force`],
-      { stdio: "ignore" }
-    );
+  const entries = readdirSync(folder);
+  if (process.platform === "win32") {
+    execFileSync(join(process.env.SystemRoot, "System32", "tar.exe"), ["-a", "-c", "-f", outFile, ...entries], {
+      cwd: folder,
+    });
+  } else {
+    execFileSync("zip", ["-r", "-q", outFile, ...entries], { cwd: folder });
   }
   if (!existsSync(outFile)) throw new Error(`could not create ${outFile}`);
   return (statSync(outFile).size / 1024).toFixed(0);
@@ -53,6 +53,7 @@ ff.browser_specific_settings = {
     strict_min_version: FIREFOX_MIN,
     data_collection_permissions: { required: ["none"] },
   },
+  gecko_android: { strict_min_version: "142.0" },
 };
 writeFileSync(join(firefoxDir, "manifest.json"), JSON.stringify(ff, null, 2) + "\n");
 console.log(`   dist/firefox/ +  meowtunes-firefox.zip (${zip(firefoxDir, join(dist, "meowtunes-firefox.zip"))} KB)`);
