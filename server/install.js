@@ -29,13 +29,43 @@ export function isInstalled() {
   return existsSync(join(installDir(), EXE_NAME));
 }
 
+function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+// taskkill exits 0 even when its filter matched nothing, so trust the output instead.
+function stopRunning() {
+  try {
+    const out = execFileSync("taskkill", ["/F", "/IM", EXE_NAME, "/FI", `PID ne ${process.pid}`], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return /SUCCESS/i.test(out);
+  } catch {
+    return false;
+  }
+}
+
+// Windows keeps an exe locked until its process has fully exited, which lags behind taskkill.
+function copyWhenUnlocked(from, to) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return copyFileSync(from, to);
+    } catch (err) {
+      if ((err.code !== "EBUSY" && err.code !== "EPERM") || attempt >= 20) throw err;
+      sleep(250);
+    }
+  }
+}
+
 export function install() {
   const dir = installDir();
   mkdirSync(dir, { recursive: true });
 
   const target = join(dir, EXE_NAME);
   if (process.execPath.toLowerCase() !== target.toLowerCase()) {
-    copyFileSync(process.execPath, target);
+    stopRunning();
+    copyWhenUnlocked(process.execPath, target);
   }
 
   // A .vbs avoids the COM plumbing a .lnk needs; window style 0 keeps a console from flashing at login.
@@ -58,16 +88,8 @@ export function uninstall() {
     } catch {}
   }
 
-  // taskkill exits 0 even when its filter matched nothing, so trust the output instead.
-  try {
-    const out = execFileSync("taskkill", ["/F", "/IM", EXE_NAME, "/FI", `PID ne ${process.pid}`], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-    if (/SUCCESS/i.test(out)) removed.push("running helper");
-  } catch {}
+  if (stopRunning()) removed.push("running helper");
 
-  // The installed exe cannot delete itself while it is the one running.
   if (!isInstalledCopy() && existsSync(installDir())) {
     try {
       rmSync(installDir(), { recursive: true, force: true });
